@@ -78,15 +78,14 @@ class PlayState extends MusicBeatState
 
 	public static var ratingStuff:Array<Dynamic> = [
 		['You Suck!', 0.2], // From 0% to 19%
-		['Shit', 0.4], // From 20% to 39%
-		['Bad', 0.5], // From 40% to 49%
-		['Bruh', 0.6], // From 50% to 59%
-		['Meh', 0.69], // From 60% to 68%
-		['Nice', 0.7], // 69%
-		['Good', 0.8], // From 70% to 79%
-		['Great', 0.9], // From 80% to 89%
-		['Sick!', 1], // From 90% to 99%
-		['Perfect!!', 1] // The value on this one isn't used actually, since Perfect is always "1"
+		['F', 0.4], // From 20% to 39%
+		['E', 0.5], // From 40% to 49%
+		['D', 0.6], // From 50% to 59%
+		['C', 0.69], // From 60% to 68%
+		['B', 0.7], // 69%
+		['A', 0.8], // From 70% to 79%
+		['S', 0.9], // From 80% to 89%
+		['S+', 1], // From 90% to 99%
 	];
 
 	// event variables
@@ -182,6 +181,18 @@ class PlayState extends MusicBeatState
 	var songPercent:Float = 0;
 
 	public var ratingsData:Array<Rating> = Rating.loadDefault();
+
+	public var marvelouss:Int = 0;
+	public var sicks:Int = 0;
+	public var goods:Int = 0;
+	public var bads:Int = 0;
+	public var shits:Int = 0;
+
+	public var fantastics:Int = 0;
+	public var excelents:Int = 0;
+	public var greats:Int = 0;
+	public var decents:Int = 0;
+	public var wayoffs:Int = 0;
 
 	private var generatedMusic:Bool = false;
 
@@ -1200,11 +1211,6 @@ class PlayState extends MusicBeatState
 			return;
 
 		var str:String = ratingName;
-		if (totalPlayed != 0)
-		{
-			var percent:Float = CoolUtil.floorDecimal(ratingPercent * 100, 2);
-			str += ' (${percent}%) - ${ratingFC}';
-		}
 
 		var tempScore:String = 'Score: ${songScore}' + (!instakillOnMiss ? ' | Misses: ${songMisses}' : "") + ' | Rating: ${str}';
 		// "tempScore" variable is used to prevent another memory leak, just in case
@@ -1215,32 +1221,6 @@ class PlayState extends MusicBeatState
 			doScoreBop();
 
 		callOnScripts('onUpdateScore', [miss]);
-	}
-
-	public dynamic function fullComboFunction()
-	{
-		var sicks:Int = ratingsData[0].hits;
-		var goods:Int = ratingsData[1].hits;
-		var bads:Int = ratingsData[2].hits;
-		var shits:Int = ratingsData[3].hits;
-
-		ratingFC = "";
-		if (songMisses == 0)
-		{
-			if (bads > 0 || shits > 0)
-				ratingFC = 'FC';
-			else if (goods > 0)
-				ratingFC = 'GFC';
-			else if (sicks > 0)
-				ratingFC = 'SFC';
-		}
-		else
-		{
-			if (songMisses < 10)
-				ratingFC = 'SDCB';
-			else
-				ratingFC = 'Clear';
-		}
 	}
 
 	public function doScoreBop():Void
@@ -2677,12 +2657,9 @@ class PlayState extends MusicBeatState
 			if (PlayState.isPixelStage)
 				uiSuffix = '-pixel';
 		}
-
-		for (rating in ratingsData)
-			Paths.image(uiPrefix + rating.image + uiSuffix);
-		for (i in 0...10)
-			Paths.image(uiPrefix + 'num' + i + uiSuffix);
 	}
+
+	var rating:FlxSprite = new FlxSprite();
 
 	private function popUpScore(note:Note = null):Void
 	{
@@ -2699,7 +2676,6 @@ class PlayState extends MusicBeatState
 		}
 
 		var placement:Float = FlxG.width * 0.35;
-		var rating:FlxSprite = new FlxSprite();
 		var score:Int = 350;
 
 		// tryna do MS based judgment due to popular demand
@@ -2738,7 +2714,17 @@ class PlayState extends MusicBeatState
 			antialias = !isPixelStage;
 		}
 
-		rating.loadGraphic(Paths.image(uiPrefix + daRating.image + uiSuffix));
+		rating.frames = Paths.getSparrowAtlas("notitg/judgements");
+		rating.animation.addByPrefix('fantastic', 'Fantastic', 1, true);
+		rating.animation.addByPrefix('excellent Late', 'Excelent late', 1, true);
+		rating.animation.addByPrefix('excellent Early', 'Excellent early', 1, true);
+		rating.animation.addByPrefix('great Early', 'Great early', 1, true);
+		rating.animation.addByPrefix('great Late', 'Great late', 1, true);
+		rating.animation.addByPrefix('decent Early', 'Decent early', 1, true);
+		rating.animation.addByPrefix('decent Late', 'Decent late', 1, true);
+		rating.animation.addByPrefix('way Off Early', 'Way off early', 1, true);
+		rating.animation.addByPrefix('way Off Late', 'Way off late', 1, true);
+		rating.animation.addByPrefix('miss', 'Miss', 1, true);
 		rating.screenCenter();
 		rating.x = placement - 40;
 		rating.y -= 60;
@@ -2753,14 +2739,10 @@ class PlayState extends MusicBeatState
 		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiPrefix + 'combo' + uiSuffix));
 		comboSpr.screenCenter();
 		comboSpr.x = placement;
-		comboSpr.acceleration.y = FlxG.random.int(200, 300) * playbackRate * playbackRate;
-		comboSpr.velocity.y -= FlxG.random.int(140, 160) * playbackRate;
 		comboSpr.visible = (!ClientPrefs.data.hideHud && showCombo);
 		comboSpr.x += ClientPrefs.data.comboOffset[0];
 		comboSpr.y -= ClientPrefs.data.comboOffset[1];
 		comboSpr.antialiasing = antialias;
-		comboSpr.y += 60;
-		comboSpr.velocity.x += FlxG.random.int(1, 10) * playbackRate;
 		comboGroup.add(rating);
 
 		if (!PlayState.isPixelStage)
@@ -3269,6 +3251,13 @@ class PlayState extends MusicBeatState
 				invalidateNote(note);
 			return;
 		}
+
+		if (!note.isSustainNote)
+			{
+				setRatingImage(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
+				combo += 1;
+				popUpScore(note);
+			}
 
 		if (!note.noAnimation)
 		{
@@ -3826,31 +3815,52 @@ class PlayState extends MusicBeatState
 		setOnScripts('score', songScore);
 		setOnScripts('misses', songMisses);
 		setOnScripts('hits', songHits);
-		setOnScripts('combo', combo);
 
-		var ret:Dynamic = callOnScripts('onRecalculateRating', null, true);
+		var ret:Dynamic = callOnLuas('onRecalculateRating', [], false);
 		if (ret != LuaUtils.Function_Stop)
 		{
-			ratingName = '?';
-			if (totalPlayed != 0) // Prevent divide by 0
+			if (totalPlayed < 1) // Prevent divide by 0
+				ratingName = '?';
+			else
 			{
 				// Rating Percent
 				ratingPercent = Math.min(1, Math.max(0, totalNotesHit / totalPlayed));
 				// trace((totalNotesHit / totalPlayed) + ', Total: ' + totalPlayed + ', notes hit: ' + totalNotesHit);
 
 				// Rating Name
-				ratingName = ratingStuff[ratingStuff.length - 1][0]; // Uses last string
-				if (ratingPercent < 1)
+				if (ratingPercent >= 1)
+				{
+					ratingName = ratingStuff[ratingStuff.length - 1][0]; // Uses last string
+				}
+				else
+				{
 					for (i in 0...ratingStuff.length - 1)
+					{
 						if (ratingPercent < ratingStuff[i][1])
 						{
 							ratingName = ratingStuff[i][0];
 							break;
 						}
+					}
+				}
 			}
-			fullComboFunction();
+
+			// Rating FC
+			ratingFC = "";
+			if (marvelouss > 0)
+				ratingFC = "MFC";
+			if (sicks > 0)
+				ratingFC = "PFC";
+			if (goods > 0)
+				ratingFC = "GFC";
+			if (bads > 0 || shits > 0)
+				ratingFC = "FC";
+			if (songMisses > 0 && songMisses < 10)
+				ratingFC = "GC";
+			else if (songMisses >= 10)
+				ratingFC = "Clear";
 		}
-		updateScore(badHit); // score will only update after rating is calculated, if it's a badHit, it shouldn't bounce
+		updateScore(badHit); // score will only update after rating is calculated, if it's a badHit, it shouldn't bounce -Ghost
 		setOnScripts('rating', ratingPercent);
 		setOnScripts('ratingName', ratingName);
 		setOnScripts('ratingFC', ratingFC);
@@ -3865,53 +3875,6 @@ class PlayState extends MusicBeatState
 		var usedPractice:Bool = (ClientPrefs.getGameplaySetting('practice') || ClientPrefs.getGameplaySetting('botplay'));
 		if (cpuControlled)
 			return;
-
-		for (name in achievesToCheck)
-		{
-			if (!Achievements.exists(name))
-				continue;
-
-			var unlock:Bool = false;
-			if (name != WeekData.getWeekFileName() + '_nomiss') // common achievements
-			{
-				switch (name)
-				{
-					case 'ur_bad':
-						unlock = (ratingPercent < 0.2 && !practiceMode);
-
-					case 'ur_good':
-						unlock = (ratingPercent >= 1 && !usedPractice);
-
-					case 'oversinging':
-						unlock = (boyfriend.holdTimer >= 10 && !usedPractice);
-
-					case 'hype':
-						unlock = (!boyfriendIdled && !usedPractice);
-
-					case 'two_keys':
-						unlock = (!usedPractice && keysPressed.length <= 2);
-
-					case 'toastie':
-						unlock = (!ClientPrefs.data.cacheOnGPU && !ClientPrefs.data.shaders && ClientPrefs.data.lowQuality && !ClientPrefs.data.antialiasing);
-
-					case 'debugger':
-						unlock = (songName == 'test' && !usedPractice);
-				}
-			}
-			else // any FC achievements, name should be "weekFileName_nomiss", e.g: "week3_nomiss";
-			{
-				if (isStoryMode
-					&& campaignMisses + songMisses < 1
-					&& Difficulty.getString().toUpperCase() == 'HARD'
-					&& storyPlaylist.length <= 1
-					&& !changedDifficulty
-					&& !usedPractice)
-					unlock = true;
-			}
-
-			if (unlock)
-				Achievements.unlock(name);
-		}
 	}
 	#end
 
@@ -3989,4 +3952,114 @@ class PlayState extends MusicBeatState
 		return false;
 	}
 	#end
+
+	public function setRatingAnimation(rat:Float)
+	{
+		if (rat >= 0)
+		{
+			if (rat <= ClientPrefs.data.marvelousWindow)
+			{
+				rating.animation.play("fantastic");
+			}
+			else if (rat <= ClientPrefs.data.sickWindow)
+			{
+				rating.animation.play("excellent Early");
+			}
+			else if (rat >= ClientPrefs.data.sickWindow && rat <= ClientPrefs.data.goodWindow)
+			{
+				rating.animation.play("great Early");
+			}
+			else if (rat >= ClientPrefs.data.goodWindow && rat <= ClientPrefs.data.badWindow)
+			{
+				rating.animation.play("decent Early");
+			}
+			else if (rat >= ClientPrefs.data.badWindow)
+			{
+				rating.animation.play("way Off Early");
+			}
+		}
+		else
+		{
+			if (rat >= ClientPrefs.data.marvelousWindow * -1)
+			{
+				rating.animation.play("fantastic");
+			}
+			else if (rat >= ClientPrefs.data.sickWindow * -1)
+			{
+				rating.animation.play("excellent Late");
+			}
+			else if (rat <= ClientPrefs.data.sickWindow * -1 && rat >= ClientPrefs.data.goodWindow * -1)
+			{
+				rating.animation.play("great Late");
+			}
+			else if (rat <= ClientPrefs.data.goodWindow * -1 && rat >= ClientPrefs.data.badWindow * -1)
+			{
+				rating.animation.play("decent Late");
+			}
+			else if (rat <= ClientPrefs.data.badWindow * -1)
+			{
+				rating.animation.play("way Off Late");
+			}
+		}
+	}
+
+	public function setRatingImage(rat:Float)
+	{
+		if (rat >= 0)
+		{
+			if (rat <= ClientPrefs.data.marvelousWindow)
+			{
+				setRatingAnimation(rat);
+				fantastics += 1;
+			}
+			else if (rat <= ClientPrefs.data.sickWindow)
+			{
+				setRatingAnimation(rat);
+				excelents += 1;
+			}
+			else if (rat >= ClientPrefs.data.sickWindow && rat <= ClientPrefs.data.goodWindow)
+			{
+				setRatingAnimation(rat);
+				greats += 1;
+			}
+			else if (rat >= ClientPrefs.data.goodWindow && rat <= ClientPrefs.data.badWindow)
+			{
+				setRatingAnimation(rat);
+				decents += 1;
+			}
+			else if (rat >= ClientPrefs.data.badWindow)
+			{
+				setRatingAnimation(rat);
+				wayoffs += 1;
+			}
+		}
+		else
+		{
+			if (rat >= ClientPrefs.data.marvelousWindow * -1)
+			{
+				setRatingAnimation(rat);
+				fantastics += 1;
+			}
+			else if (rat >= ClientPrefs.data.sickWindow * -1)
+			{
+				setRatingAnimation(rat);
+				excelents += 1;
+			}
+			else if (rat <= ClientPrefs.data.sickWindow * -1 && rat >= ClientPrefs.data.goodWindow * -1)
+			{
+				setRatingAnimation(rat);
+				greats += 1;
+			}
+			else if (rat <= ClientPrefs.data.goodWindow * -1 && rat >= ClientPrefs.data.badWindow * -1)
+			{
+				setRatingAnimation(rat);
+				decents += 1;
+			}
+			else if (rat <= ClientPrefs.data.badWindow * -1)
+			{
+				setRatingAnimation(rat);
+				wayoffs += 1;
+			}
+		}
+	}
 }
