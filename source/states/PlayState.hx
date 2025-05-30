@@ -2666,15 +2666,6 @@ class PlayState extends MusicBeatState
 		var noteDiff:Float = Math.abs(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
 		vocals.volume = 1;
 
-		if (!ClientPrefs.data.comboStacking && comboGroup.members.length > 0)
-		{
-			for (spr in comboGroup)
-			{
-				spr.destroy();
-				comboGroup.remove(spr);
-			}
-		}
-
 		var placement:Float = FlxG.width * 0.35;
 		var score:Int = 350;
 
@@ -2728,9 +2719,6 @@ class PlayState extends MusicBeatState
 		rating.screenCenter();
 		rating.x = placement - 40;
 		rating.y -= 60;
-		rating.acceleration.y = 550 * playbackRate * playbackRate;
-		rating.velocity.y -= FlxG.random.int(140, 175) * playbackRate;
-		rating.velocity.x -= FlxG.random.int(0, 10) * playbackRate;
 		rating.visible = (!ClientPrefs.data.hideHud && showRating);
 		rating.x += ClientPrefs.data.comboOffset[0];
 		rating.y -= ClientPrefs.data.comboOffset[1];
@@ -2810,18 +2798,6 @@ class PlayState extends MusicBeatState
 				xThing = numScore.x;
 		}
 		comboSpr.x = xThing + 50;
-		FlxTween.tween(rating, {alpha: 0}, 0.2 / playbackRate, {
-			startDelay: Conductor.crochet * 0.001 / playbackRate
-		});
-
-		FlxTween.tween(comboSpr, {alpha: 0}, 0.2 / playbackRate, {
-			onComplete: function(tween:FlxTween)
-			{
-				comboSpr.destroy();
-				rating.destroy();
-			},
-			startDelay: Conductor.crochet * 0.002 / playbackRate
-		});
 	}
 
 	public var strumsBlocked:Array<Bool> = [];
@@ -3044,6 +3020,11 @@ class PlayState extends MusicBeatState
 			daNote.noteType,
 			daNote.isSustainNote
 		]);
+
+		if (!daNote.isSustainNote){
+			rating.animation.play("miss");
+		}
+
 		if (result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll)
 			callOnHScript('noteMiss', [daNote]);
 	}
@@ -3254,7 +3235,7 @@ class PlayState extends MusicBeatState
 
 		if (!note.isSustainNote)
 			{
-				setRatingImage(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
+				setRatingAnimation(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
 				combo += 1;
 				popUpScore(note);
 			}
@@ -4003,63 +3984,63 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	public function setRatingImage(rat:Float)
-	{
-		if (rat >= 0)
-		{
-			if (rat <= ClientPrefs.data.marvelousWindow)
-			{
-				setRatingAnimation(rat);
-				fantastics += 1;
-			}
-			else if (rat <= ClientPrefs.data.sickWindow)
-			{
-				setRatingAnimation(rat);
-				excelents += 1;
-			}
-			else if (rat >= ClientPrefs.data.sickWindow && rat <= ClientPrefs.data.goodWindow)
-			{
-				setRatingAnimation(rat);
-				greats += 1;
-			}
-			else if (rat >= ClientPrefs.data.goodWindow && rat <= ClientPrefs.data.badWindow)
-			{
-				setRatingAnimation(rat);
-				decents += 1;
-			}
-			else if (rat >= ClientPrefs.data.badWindow)
-			{
-				setRatingAnimation(rat);
-				wayoffs += 1;
-			}
-		}
-		else
-		{
-			if (rat >= ClientPrefs.data.marvelousWindow * -1)
-			{
-				setRatingAnimation(rat);
-				fantastics += 1;
-			}
-			else if (rat >= ClientPrefs.data.sickWindow * -1)
-			{
-				setRatingAnimation(rat);
-				excelents += 1;
-			}
-			else if (rat <= ClientPrefs.data.sickWindow * -1 && rat >= ClientPrefs.data.goodWindow * -1)
-			{
-				setRatingAnimation(rat);
-				greats += 1;
-			}
-			else if (rat <= ClientPrefs.data.goodWindow * -1 && rat >= ClientPrefs.data.badWindow * -1)
-			{
-				setRatingAnimation(rat);
-				decents += 1;
-			}
-			else if (rat <= ClientPrefs.data.badWindow * -1)
-			{
-				setRatingAnimation(rat);
-				wayoffs += 1;
-			}
-		}
-	}
+	// public function setRatingImage(rat:Float)
+	// {
+	// 	if (rat >= 0)
+	// 	{
+	// 		if (rat <= ClientPrefs.data.marvelousWindow)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			fantastics += 1;
+	// 		}
+	// 		else if (rat <= ClientPrefs.data.sickWindow)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			excelents += 1;
+	// 		}
+	// 		else if (rat >= ClientPrefs.data.sickWindow && rat <= ClientPrefs.data.goodWindow)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			greats += 1;
+	// 		}
+	// 		else if (rat >= ClientPrefs.data.goodWindow && rat <= ClientPrefs.data.badWindow)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			decents += 1;
+	// 		}
+	// 		else if (rat >= ClientPrefs.data.badWindow)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			wayoffs += 1;
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		if (rat >= ClientPrefs.data.marvelousWindow * -1)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			fantastics += 1;
+	// 		}
+	// 		else if (rat >= ClientPrefs.data.sickWindow * -1)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			excelents += 1;
+	// 		}
+	// 		else if (rat <= ClientPrefs.data.sickWindow * -1 && rat >= ClientPrefs.data.goodWindow * -1)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			greats += 1;
+	// 		}
+	// 		else if (rat <= ClientPrefs.data.goodWindow * -1 && rat >= ClientPrefs.data.badWindow * -1)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			decents += 1;
+	// 		}
+	// 		else if (rat <= ClientPrefs.data.badWindow * -1)
+	// 		{
+	// 			setRatingAnimation(rat);
+	// 			wayoffs += 1;
+	// 		}
+	// 	}
+	// }
 }

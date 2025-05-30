@@ -3,6 +3,7 @@ package states.modded;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.util.FlxAxes;
 import backend.Song;
+import substates.GameplayChangersSubstate;
 
 class DaveMain extends MusicBeatState
 {
@@ -148,6 +149,12 @@ class DaveMain extends MusicBeatState
 			{
 				i.alpha = 1;
 			}
+		}
+
+		if(FlxG.keys.justPressed.CONTROL)
+		{
+			persistentUpdate = false;
+			openSubState(new GameplayChangersSubstate());
 		}
 
 		if (controls.BACK)
