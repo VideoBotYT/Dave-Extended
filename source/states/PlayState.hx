@@ -286,6 +286,10 @@ class PlayState extends MusicBeatState
 	public var startCallback:Void->Void = null;
 	public var endCallback:Void->Void = null;
 
+	var placement:Float = FlxG.width * 0.35;
+
+	var rating:FlxSprite = new FlxSprite();
+
 	override public function create()
 	{
 		// trace('Playback Rate: ' + playbackRate);
@@ -613,6 +617,25 @@ class PlayState extends MusicBeatState
 		uiGroup.cameras = [camHUD];
 		noteGroup.cameras = [camHUD];
 		comboGroup.cameras = [camHUD];
+
+		rating.frames = Paths.getSparrowAtlas("notitg/judgements");
+		rating.animation.addByPrefix('fantastic', 'Fantastic', 1, true);
+		rating.animation.addByPrefix('excellent Late', 'Excelent late', 1, true);
+		rating.animation.addByPrefix('excellent Early', 'Excellent early', 1, true);
+		rating.animation.addByPrefix('great Early', 'Great early', 1, true);
+		rating.animation.addByPrefix('great Late', 'Great late', 1, true);
+		rating.animation.addByPrefix('decent Early', 'Decent early', 1, true);
+		rating.animation.addByPrefix('decent Late', 'Decent late', 1, true);
+		rating.animation.addByPrefix('way Off Early', 'Way off early', 1, true);
+		rating.animation.addByPrefix('way Off Late', 'Way off late', 1, true);
+		rating.animation.addByPrefix('miss', 'Miss', 1, true);
+		rating.screenCenter();
+		rating.x = placement - 40;
+		rating.y -= 60;
+		rating.visible = (!ClientPrefs.data.hideHud && showRating);
+		rating.x += ClientPrefs.data.comboOffset[0];
+		rating.y -= ClientPrefs.data.comboOffset[1];
+		rating.antialiasing = ClientPrefs.data.antialiasing;
 
 		startingSong = true;
 
@@ -2659,14 +2682,11 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	var rating:FlxSprite = new FlxSprite();
-
 	private function popUpScore(note:Note = null):Void
 	{
 		var noteDiff:Float = Math.abs(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
 		vocals.volume = 1;
 
-		var placement:Float = FlxG.width * 0.35;
 		var score:Int = 350;
 
 		// tryna do MS based judgment due to popular demand
@@ -2705,25 +2725,6 @@ class PlayState extends MusicBeatState
 			antialias = !isPixelStage;
 		}
 
-		rating.frames = Paths.getSparrowAtlas("notitg/judgements");
-		rating.animation.addByPrefix('fantastic', 'Fantastic', 1, true);
-		rating.animation.addByPrefix('excellent Late', 'Excelent late', 1, true);
-		rating.animation.addByPrefix('excellent Early', 'Excellent early', 1, true);
-		rating.animation.addByPrefix('great Early', 'Great early', 1, true);
-		rating.animation.addByPrefix('great Late', 'Great late', 1, true);
-		rating.animation.addByPrefix('decent Early', 'Decent early', 1, true);
-		rating.animation.addByPrefix('decent Late', 'Decent late', 1, true);
-		rating.animation.addByPrefix('way Off Early', 'Way off early', 1, true);
-		rating.animation.addByPrefix('way Off Late', 'Way off late', 1, true);
-		rating.animation.addByPrefix('miss', 'Miss', 1, true);
-		rating.screenCenter();
-		rating.x = placement - 40;
-		rating.y -= 60;
-		rating.visible = (!ClientPrefs.data.hideHud && showRating);
-		rating.x += ClientPrefs.data.comboOffset[0];
-		rating.y -= ClientPrefs.data.comboOffset[1];
-		rating.antialiasing = antialias;
-
 		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiPrefix + 'combo' + uiSuffix));
 		comboSpr.screenCenter();
 		comboSpr.x = placement;
@@ -2733,16 +2734,7 @@ class PlayState extends MusicBeatState
 		comboSpr.antialiasing = antialias;
 		comboGroup.add(rating);
 
-		if (!PlayState.isPixelStage)
-		{
-			rating.setGraphicSize(Std.int(rating.width * 0.7));
-			comboSpr.setGraphicSize(Std.int(comboSpr.width * 0.7));
-		}
-		else
-		{
-			rating.setGraphicSize(Std.int(rating.width * daPixelZoom * 0.85));
-			comboSpr.setGraphicSize(Std.int(comboSpr.width * daPixelZoom * 0.85));
-		}
+		comboSpr.setGraphicSize(Std.int(comboSpr.width * 0.7));
 
 		comboSpr.updateHitbox();
 		rating.updateHitbox();
@@ -3021,7 +3013,8 @@ class PlayState extends MusicBeatState
 			daNote.isSustainNote
 		]);
 
-		if (!daNote.isSustainNote){
+		if (!daNote.isSustainNote)
+		{
 			rating.animation.play("miss");
 		}
 
@@ -3233,13 +3226,6 @@ class PlayState extends MusicBeatState
 			return;
 		}
 
-		if (!note.isSustainNote)
-			{
-				setRatingAnimation(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
-				combo += 1;
-				popUpScore(note);
-			}
-
 		if (!note.noAnimation)
 		{
 			var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length - 1, note.noteData)))];
@@ -3281,6 +3267,7 @@ class PlayState extends MusicBeatState
 
 		if (!note.isSustainNote)
 		{
+			setRatingAnimation(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
 			combo++;
 			if (combo > 9999)
 				combo = 9999;
