@@ -157,6 +157,9 @@ class DaveMain extends MusicBeatState
 			openSubState(new GameplayChangersSubstate());
 		}
 
+		// if (controls.UI_RIGHT_P)
+		// 	openSubState(new modchart.ResultScreen(4000, 200, 100.5, 210, 100, 250, 300, 201, 10));
+
 		if (controls.BACK)
 			MusicBeatState.switchState(new states.TitleState());
 		super.update(elapsed);

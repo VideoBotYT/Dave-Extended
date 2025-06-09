@@ -194,6 +194,9 @@ class PlayState extends MusicBeatState
 	public var decents:Int = 0;
 	public var wayoffs:Int = 0;
 
+	private var maxCombo:Int = 0;
+	public static var inResultScreen:Bool = false;
+
 	private var generatedMusic:Bool = false;
 
 	public var endingSong:Bool = false;
@@ -601,7 +604,7 @@ class PlayState extends MusicBeatState
 		scoreTxt.borderSize = 1.25;
 		scoreTxt.visible = !ClientPrefs.data.hideHud;
 		updateScore(false);
-		uiGroup.add(scoreTxt);
+		// uiGroup.add(scoreTxt);
 
 		botplayTxt = new FlxText(400, timeBar.y + 55, FlxG.width - 800, "AUTOPLAY", 32);
 		botplayTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -2526,6 +2529,35 @@ class PlayState extends MusicBeatState
 
 	public var transitioning = false;
 
+	public function resutltScreen():Void
+	{
+		openSubState(new modchart.ResultScreen(Math.round(songScore), maxCombo, Highscore.floorDecimal(ratingPercent * 100, 2), fantastics, excelents, greats, decents, wayoffs, songMisses));
+
+		inResultScreen = true;
+
+		var ret:Dynamic = callOnScripts('onRating', null, true);
+		if (ret != LuaUtils.Function_Stop){
+			#if PRELOAD_ALL	
+				sys.thread.Thread.create(() ->
+				{
+					if (!practiceMode)
+					{
+						var percent:Float = ratingPercent;
+						if(Math.isNaN(percent)) percent = 0;
+						Highscore.saveScore(SONG.song, songScore, storyDifficulty, percent);
+					}
+				});
+			#else
+				if (!practiceMode)
+				{	
+					var percent:Float = ratingPercent;
+					if(Math.isNaN(percent)) percent = 0;
+					Highscore.saveScore(SONG.song, songScore, storyDifficulty, percent);
+				}
+			#end
+		}
+	}
+
 	public function endSong()
 	{
 		// Should kill you if you tried to cheat
@@ -2571,73 +2603,10 @@ class PlayState extends MusicBeatState
 		var ret:Dynamic = callOnScripts('onEndSong', null, true);
 		if (ret != LuaUtils.Function_Stop && !transitioning)
 		{
-			#if !switch
-			var percent:Float = ratingPercent;
-			if (Math.isNaN(percent))
-				percent = 0;
-			Highscore.saveScore(SONG.song, songScore, storyDifficulty, percent);
-			#end
 			playbackRate = 1;
 
-			if (chartingMode)
-			{
-				openChartEditor();
-				return false;
-			}
+			resutltScreen();
 
-			if (isStoryMode)
-			{
-				campaignScore += songScore;
-				campaignMisses += songMisses;
-
-				storyPlaylist.remove(storyPlaylist[0]);
-
-				if (storyPlaylist.length <= 0)
-				{
-					Mods.loadTopMod();
-					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
-					#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
-
-					MusicBeatState.switchState(new StoryMenuState());
-
-					// if ()
-					if (!ClientPrefs.getGameplaySetting('practice') && !ClientPrefs.getGameplaySetting('botplay'))
-					{
-						StoryMenuState.weekCompleted.set(WeekData.weeksList[storyWeek], true);
-						Highscore.saveWeekScore(WeekData.getWeekFileName(), campaignScore, storyDifficulty);
-
-						FlxG.save.data.weekCompleted = StoryMenuState.weekCompleted;
-						FlxG.save.flush();
-					}
-					changedDifficulty = false;
-				}
-				else
-				{
-					var difficulty:String = Difficulty.getFilePath();
-
-					trace('LOADING NEXT SONG');
-					trace(Paths.formatToSongPath(PlayState.storyPlaylist[0]) + difficulty);
-
-					FlxTransitionableState.skipNextTransIn = true;
-					FlxTransitionableState.skipNextTransOut = true;
-					prevCamFollow = camFollow;
-
-					PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0] + difficulty, PlayState.storyPlaylist[0]);
-					FlxG.sound.music.stop();
-
-					LoadingState.loadAndSwitchState(new PlayState());
-				}
-			}
-			else
-			{
-				trace('WENT BACK TO FREEPLAY??');
-				Mods.loadTopMod();
-				#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
-
-				MusicBeatState.switchState(new states.modded.DaveMain());
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
-				changedDifficulty = false;
-			}
 			transitioning = true;
 		}
 		return true;
@@ -2751,8 +2720,8 @@ class PlayState extends MusicBeatState
 
 		var daLoop:Int = 0;
 		var xThing:Float = 0;
-		if (showCombo)
-			comboGroup.add(comboSpr);
+		// if (showCombo)
+		// 	comboGroup.add(comboSpr);
 
 		for (i in seperatedScore)
 		{
@@ -2774,8 +2743,8 @@ class PlayState extends MusicBeatState
 			numScore.antialiasing = antialias;
 
 			// if (combo >= 10 || combo == 0)
-			if (showComboNum)
-				comboGroup.add(numScore);
+			// if (showComboNum)
+			// 	comboGroup.add(numScore);
 
 			FlxTween.tween(numScore, {alpha: 0}, 0.2 / playbackRate, {
 				onComplete: function(tween:FlxTween)
@@ -3267,10 +3236,11 @@ class PlayState extends MusicBeatState
 
 		if (!note.isSustainNote)
 		{
-			setRatingAnimation(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
+			setRatingImage(note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset);
 			combo++;
 			if (combo > 9999)
 				combo = 9999;
+			if (combo > maxCombo) maxCombo = combo;
 			popUpScore(note);
 		}
 		var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
@@ -3971,63 +3941,63 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	// public function setRatingImage(rat:Float)
-	// {
-	// 	if (rat >= 0)
-	// 	{
-	// 		if (rat <= ClientPrefs.data.marvelousWindow)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			fantastics += 1;
-	// 		}
-	// 		else if (rat <= ClientPrefs.data.sickWindow)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			excelents += 1;
-	// 		}
-	// 		else if (rat >= ClientPrefs.data.sickWindow && rat <= ClientPrefs.data.goodWindow)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			greats += 1;
-	// 		}
-	// 		else if (rat >= ClientPrefs.data.goodWindow && rat <= ClientPrefs.data.badWindow)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			decents += 1;
-	// 		}
-	// 		else if (rat >= ClientPrefs.data.badWindow)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			wayoffs += 1;
-	// 		}
-	// 	}
-	// 	else
-	// 	{
-	// 		if (rat >= ClientPrefs.data.marvelousWindow * -1)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			fantastics += 1;
-	// 		}
-	// 		else if (rat >= ClientPrefs.data.sickWindow * -1)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			excelents += 1;
-	// 		}
-	// 		else if (rat <= ClientPrefs.data.sickWindow * -1 && rat >= ClientPrefs.data.goodWindow * -1)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			greats += 1;
-	// 		}
-	// 		else if (rat <= ClientPrefs.data.goodWindow * -1 && rat >= ClientPrefs.data.badWindow * -1)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			decents += 1;
-	// 		}
-	// 		else if (rat <= ClientPrefs.data.badWindow * -1)
-	// 		{
-	// 			setRatingAnimation(rat);
-	// 			wayoffs += 1;
-	// 		}
-	// 	}
-	// }
+	public function setRatingImage(rat:Float)
+	{
+		if (rat >= 0)
+		{
+			if (rat <= ClientPrefs.data.marvelousWindow)
+			{
+				setRatingAnimation(rat);
+				fantastics += 1;
+			}
+			else if (rat <= ClientPrefs.data.sickWindow)
+			{
+				setRatingAnimation(rat);
+				excelents += 1;
+			}
+			else if (rat >= ClientPrefs.data.sickWindow && rat <= ClientPrefs.data.goodWindow)
+			{
+				setRatingAnimation(rat);
+				greats += 1;
+			}
+			else if (rat >= ClientPrefs.data.goodWindow && rat <= ClientPrefs.data.badWindow)
+			{
+				setRatingAnimation(rat);
+				decents += 1;
+			}
+			else if (rat >= ClientPrefs.data.badWindow)
+			{
+				setRatingAnimation(rat);
+				wayoffs += 1;
+			}
+		}
+		else
+		{
+			if (rat >= ClientPrefs.data.marvelousWindow * -1)
+			{
+				setRatingAnimation(rat);
+				fantastics += 1;
+			}
+			else if (rat >= ClientPrefs.data.sickWindow * -1)
+			{
+				setRatingAnimation(rat);
+				excelents += 1;
+			}
+			else if (rat <= ClientPrefs.data.sickWindow * -1 && rat >= ClientPrefs.data.goodWindow * -1)
+			{
+				setRatingAnimation(rat);
+				greats += 1;
+			}
+			else if (rat <= ClientPrefs.data.goodWindow * -1 && rat >= ClientPrefs.data.badWindow * -1)
+			{
+				setRatingAnimation(rat);
+				decents += 1;
+			}
+			else if (rat <= ClientPrefs.data.badWindow * -1)
+			{
+				setRatingAnimation(rat);
+				wayoffs += 1;
+			}
+		}
+	}
 }
