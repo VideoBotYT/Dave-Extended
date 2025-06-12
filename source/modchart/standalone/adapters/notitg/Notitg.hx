@@ -59,7 +59,14 @@ class Notitg implements IAdapter
 		#if LUA_ALLOWED
 		for (lua in PlayState.instance.luaArray)
 		{
-			Lua_helper.add_callback(lua.lua, "initManager", function() 
+			Lua_helper.add_callback(lua.lua, "registerModifier", function(name:String, mod:String, player:Int = -1)
+			{
+				var modClass = Type.resolveClass('modchart.modifiers.' + mod);
+				var modifier = Type.createInstance(modClass, []);
+
+				manager.registerModifier(name, modifier, player);
+			});
+			Lua_helper.add_callback(lua.lua, "initManager", function()
 			{
 				LuaUtils.getTargetInstance().add(manager);
 			});
@@ -71,14 +78,19 @@ class Notitg implements IAdapter
 			{
 				manager.setPercent(name, value, player, field);
 			});
+			Lua_helper.add_callback(lua.lua, "getPercent", function(name:String, player:Int = 0, field:Int = 0)
+			{
+				manager.getPercent(name, player, field);
+			});
 			Lua_helper.add_callback(lua.lua, "set", function(name:String, beat:Float, value:Float, player:Int = -1, field:Int = -1)
 			{
 				manager.set(name, beat, value, player, field);
 			});
-			Lua_helper.add_callback(lua.lua, "ease", function(name:String, beat:Float, length:Float, value:Float, easeFunc:String, player:Int = -1, field:Int = -1)
-			{
-				manager.ease(name, beat, length, value, LuaUtils.getTweenEaseByString(easeFunc), player, field);
-			});
+			Lua_helper.add_callback(lua.lua, "ease",
+				function(name:String, beat:Float, length:Float, value:Float, easeFunc:String, player:Int = -1, field:Int = -1)
+				{
+					manager.ease(name, beat, length, value, LuaUtils.getTweenEaseByString(easeFunc), player, field);
+				});
 			Lua_helper.add_callback(lua.lua, "addPlayfield", function()
 			{
 				manager.addPlayfield();

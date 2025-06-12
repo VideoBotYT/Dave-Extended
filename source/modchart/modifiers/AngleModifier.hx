@@ -1,7 +1,6 @@
-package modifiers;
+package modchart.modifiers;
 
 import flixel.FlxG;
-import openfl.geom.Vector3D;
 @:keep
 class AngleModifier extends Rotate {
 	override public function getOrigin(curPos:Vector3D, params:RenderParams):Vector3D {

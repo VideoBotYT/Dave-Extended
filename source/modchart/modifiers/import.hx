@@ -1,4 +1,4 @@
-package modifiers;
+package modchart.modifiers;
 
 import modchart.*;
 import modchart.modifiers.*;
@@ -11,3 +11,4 @@ import modchart.standalone.*;
 import modchart.core.util.Constants.ArrowData;
 import modchart.core.util.Constants.RenderParams;
 import modchart.core.util.Constants.Visuals;
+import openfl.geom.Vector3D;
