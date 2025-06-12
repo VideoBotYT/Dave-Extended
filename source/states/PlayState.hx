@@ -55,6 +55,9 @@ import psychlua.HScript;
 import tea.SScript;
 #end
 
+import modchart.standalone.adapters.notitg.Notitg as ModchartManager;
+import modchart.Manager;
+
 /**
  * This is where all the Gameplay stuff happens and is managed
  *
@@ -701,6 +704,10 @@ class PlayState extends MusicBeatState
 			Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic));
 
 		resetRPC();
+
+		var manager:Manager;
+		manager = new Manager();
+		ModchartManager.setupLuaFunctions(manager);
 
 		callOnScripts('onCreatePost');
 
