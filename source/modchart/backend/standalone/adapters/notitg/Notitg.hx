@@ -1,57 +1,36 @@
-package modchart.standalone.adapters.notitg;
+package modchart.backend.standalone.adapters.notitg;
+
 
 import backend.ClientPrefs;
 import backend.Conductor;
 import objects.Note;
+import objects.NoteSplash;
 import objects.StrumNote as Strum;
+
 import states.PlayState;
 import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import modchart.Manager;
-import modchart.standalone.IAdapter;
-#if LUA_ALLOWED
-import llua.Lua;
-import llua.LuaL;
-import llua.State;
-import llua.Convert;
-import psychlua.FunkinLua;
+import modchart.backend.standalone.IAdapter;
+
 import psychlua.LuaUtils;
-#end
 
 class Notitg implements IAdapter
 {
 	private var __fCrochet:Float = 0;
 
-	private var __receptorXs:Array<Array<Float>>;
-	private var __receptorYs:Array<Array<Float>>;
-
 	// public function new() {
 	// 	try {
 	// 		setupLuaFunctions();
 	// 	} catch (e) {
-	// 		trace('[FunkinModchart NotITG Adapter] Failed while adding lua functions: $e');
+	// 		trace('[ From FunkinModchart Adapter ] Failed while adding lua functions: $e');
 	// 	}
 	// }
 
 	public function onModchartingInitialization()
 	{
-		__fCrochet = Conductor.crochet;
-
-		__receptorXs = [];
-		__receptorYs = [];
-
-		@:privateAccess
-		PlayState.instance.strumLineNotes.forEachAlive(strumNote ->
-		{
-			if (__receptorXs[strumNote.player] == null)
-				__receptorXs[strumNote.player] = [];
-			if (__receptorYs[strumNote.player] == null)
-				__receptorYs[strumNote.player] = [];
-
-			__receptorXs[strumNote.player][strumNote.noteData] = strumNote.x;
-			__receptorYs[strumNote.player][strumNote.noteData] = getDownscroll() ? FlxG.height - strumNote.y - Manager.ARROW_SIZE : strumNote.y;
-		});
+		__fCrochet = (Conductor.crochet + 8) / 4;
 	}
 
 	public static function setupLuaFunctions(manager:Manager)
@@ -59,13 +38,6 @@ class Notitg implements IAdapter
 		#if LUA_ALLOWED
 		for (lua in PlayState.instance.luaArray)
 		{
-			Lua_helper.add_callback(lua.lua, "registerModifier", function(name:String, mod:String, player:Int = -1)
-			{
-				var modClass = Type.resolveClass('modchart.modifiers.' + mod);
-				var modifier = Type.createInstance(modClass, []);
-
-				manager.registerModifier(name, modifier, player);
-			});
 			Lua_helper.add_callback(lua.lua, "initManager", function()
 			{
 				LuaUtils.getTargetInstance().add(manager);
@@ -116,9 +88,9 @@ class Notitg implements IAdapter
 		return PlayState.instance.curDecBeat;
 	}
 
-	public function getStaticCrochet():Float
+	public function getCurrentCrochet():Float
 	{
-		return __fCrochet + 8;
+		return Conductor.crochet;
 	}
 
 	public function getBeatFromStep(step:Float)
@@ -149,6 +121,10 @@ class Notitg implements IAdapter
 			return cast(arrow, Note).noteData;
 		else if (arrow is Strum) @:privateAccess
 			return cast(arrow, Strum).noteData;
+		#if (FM_ENGINE_VERSION >= "1.0")
+		if (arrow is NoteSplash) @:privateAccess
+			return cast(arrow, NoteSplash).babyArrow.noteData;
+		#end
 
 		return 0;
 	}
@@ -157,9 +133,12 @@ class Notitg implements IAdapter
 	{
 		if (arrow is Note)
 			return cast(arrow, Note).mustPress ? 1 : 0;
-		else if (arrow is Strum) @:privateAccess
+		if (arrow is Strum) @:privateAccess
 			return cast(arrow, Strum).player;
-
+		#if (FM_ENGINE_VERSION >= "1.0")
+		if (arrow is NoteSplash) @:privateAccess
+			return cast(arrow, NoteSplash).babyArrow.player;
+		#end
 		return 0;
 	}
 
@@ -181,33 +160,54 @@ class Notitg implements IAdapter
 		return 0;
 	}
 
-	public function getHoldSubdivisions():Int
+	public function getHoldSubdivisions(hold:FlxSprite):Int
 	{
 		return 4;
 	}
 
-	// psych adjust the strum pos at the begin of playstate
+	public function getHoldLength(item:FlxSprite):Float
+		return __fCrochet;
+
+	public function getHoldParentTime(arrow:FlxSprite)
+	{
+		final note:Note = cast arrow;
+		return note.parent.strumTime;
+	}
+
 	public function getDownscroll():Bool
 	{
 		return ClientPrefs.data.downScroll;
 	}
 
+	inline function getStrumFromInfo(lane:Int, player:Int)
+	{
+		var group = player == 0 ? PlayState.instance.opponentStrums : PlayState.instance.playerStrums;
+		var strum = null;
+		group.forEach(str ->
+		{
+			@:privateAccess
+			if (str.noteData == lane)
+				strum = str;
+		});
+		return strum;
+	}
+
 	public function getDefaultReceptorX(lane:Int, player:Int):Float
 	{
-		return __receptorXs[player][lane];
+		return getStrumFromInfo(lane, player).x;
 	}
 
 	public function getDefaultReceptorY(lane:Int, player:Int):Float
 	{
-		return __receptorYs[player][lane];
+		return getDownscroll() ? FlxG.height - getStrumFromInfo(lane, player).y - Note.swagWidth : getStrumFromInfo(lane, player).y;
 	}
 
 	public function getArrowCamera():Array<FlxCamera>
-		return [PlayState.instance.camManager];
+		return [PlayState.instance.camHUD];
 
 	public function getCurrentScrollSpeed():Float
 	{
-		return PlayState.instance.songSpeed;
+		return PlayState.instance.songSpeed * .45;
 	}
 
 	// 0 receptors
@@ -215,7 +215,7 @@ class Notitg implements IAdapter
 	// 2 hold arrows
 	public function getArrowItems()
 	{
-		var pspr:Array<Array<Array<FlxSprite>>> = [[[], [], []], [[], [], []]];
+		var pspr:Array<Array<Array<FlxSprite>>> = [[[], [], [], []], [[], [], [], []]];
 
 		@:privateAccess
 		PlayState.instance.strumLineNotes.forEachAlive(strumNote ->
@@ -233,13 +233,21 @@ class Notitg implements IAdapter
 
 			pspr[player][strumNote.isSustainNote ? 2 : 1].push(strumNote);
 		});
+		#if (FM_ENGINE_VERSION >= "1.0")
+		PlayState.instance.grpNoteSplashes.forEachAlive(splash ->
+		{
+			@:privateAccess
+			if (splash.babyArrow != null && splash.active)
+			{
+				final player = splash.babyArrow.player;
+				if (pspr[player] == null)
+					pspr[player] = [];
+
+				pspr[player][3].push(splash);
+			}
+		});
+		#end
 
 		return pspr;
-	}
-
-	public function getHoldParentTime(arrow:FlxSprite)
-	{
-		final note:Note = cast arrow;
-		return note.parent.strumTime;
 	}
 }

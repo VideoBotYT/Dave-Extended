@@ -112,7 +112,7 @@
 	<haxedef name="FM_ENGINE" value="NOTITG"/>
 
 	<haxelib name="funkin-modchart" />
-	<haxeflag name="--macro" value="modchart.core.macros.Macro.includeFiles()"/>
+	<haxeflag name="--macro" value="modchart.backend.macros.Macro.includeFiles()"/>
 	<haxeflag name="--macro" value="include('modifiers')"/>
 	<!-- ______________________________ Haxedefines _____________________________ -->
 

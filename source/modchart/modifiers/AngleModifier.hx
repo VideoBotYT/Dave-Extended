@@ -3,17 +3,17 @@ package modchart.modifiers;
 import flixel.FlxG;
 @:keep
 class AngleModifier extends Rotate {
-	override public function getOrigin(curPos:Vector3D, params:RenderParams):Vector3D {
-		return new Vector3D(FlxG.width * 0.5, HEIGHT * 0.5);
+	override public function getOrigin(curPos:Vector3, params:ModifierParameters):Vector3 {
+		return new Vector3(FlxG.width * 0.5, HEIGHT * 0.5);
 	}
 
 	override public function getRotateName():String
 		return 'angle';
 
-	override public function shouldRun(params:RenderParams):Bool
+	override public function shouldRun(params:ModifierParameters):Bool
 		return true;
 
-	override function visuals(data:Visuals, params:RenderParams) {
+	override function visuals(data:VisualParameters, params:ModifierParameters) {
 		var rotateName = getRotateName();
 		var player = params.player;
 

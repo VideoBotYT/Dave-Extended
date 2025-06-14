@@ -55,7 +55,7 @@ import psychlua.HScript;
 import tea.SScript;
 #end
 
-import modchart.standalone.adapters.notitg.Notitg as ModchartManager;
+import modchart.backend.standalone.adapters.notitg.Notitg as ModchartManager;
 import modchart.Manager;
 
 /**

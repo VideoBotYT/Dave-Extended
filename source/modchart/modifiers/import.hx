@@ -1,14 +1,7 @@
 package modchart.modifiers;
 
 import modchart.*;
-import modchart.modifiers.*;
-import modchart.core.*;
-import modchart.core.util.*;
-import modchart.core.environments.*;
-import modchart.core.graphics.*;
-import modchart.core.macros.*;
-import modchart.standalone.*;
-import modchart.core.util.Constants.ArrowData;
-import modchart.core.util.Constants.RenderParams;
-import modchart.core.util.Constants.Visuals;
-import openfl.geom.Vector3D;
+import modchart.engine.modifiers.list.*;
+import modchart.backend.util.ModchartUtil;
+import modchart.backend.core.*;
+import modchart.backend.math.*;
